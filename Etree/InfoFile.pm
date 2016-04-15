@@ -574,13 +574,13 @@ sub parsetracks {
     }
 
     if (exists $self->{"Date"} and defined $self->{"Date"}) {
-        #if ($have_date_parse) {
-        #    my $time = str2time ($self->{"Date"});
-        #    if (defined $time) {
-        #        $self->{"CanonicalDate"} =
-        #        strftime ("%Y-%m-%d", localtime ($time));
-        #    }
-        #} else {
+        if ($have_date_parse) {
+            my $time = str2time ($self->{"Date"});
+            if (defined $time) {
+                $self->{"CanonicalDate"} =
+                strftime ("%Y-%m-%d", localtime ($time));
+            }
+        } else {
             if ($self->{Date} =~ m@^(\d{1,2})[-/](\d{1,2})[-/](\d{2}|\d{4})$@
                     and $1 >= 1 and $1 <= 12
                     and $2 >= 1 and $2 <= 31) {
@@ -598,7 +598,7 @@ sub parsetracks {
                     and $3 >= 1 and $3 <= 31) {
                 $self->{CanonicalDate} = sprintf ("%04d-%02d-%02d", $1, $2, $3);
             }
-        #}
+        }
     }
 }
 
