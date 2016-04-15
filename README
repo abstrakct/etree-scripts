@@ -15,6 +15,8 @@ Changes since version 3.2:
 
 * Include the segue marker in the title tag, and change it to "->".
 * Also works when a song has a segue marker and a note (in that order).
+* Date parsing now seems to work (for some reason it was turning 1966 -> 2066 etc.)
+* Proper indentation of source code.
 
 Changes since version 3.1:
 
