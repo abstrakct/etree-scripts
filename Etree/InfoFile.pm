@@ -577,8 +577,14 @@ sub parsetracks {
         if ($have_date_parse) {
             my $time = str2time ($self->{"Date"});
             if (defined $time) {
-                $self->{"CanonicalDate"} =
-                strftime ("%Y-%m-%d", localtime ($time));
+                my $yearfix = strftime("%Y", localtime ($time));
+                if ($yearfix > 2030) {
+                    $yearfix -= 100;
+                }
+                my $datefix = strftime("%m-%d", localtime ($time));
+                $self->{"CanonicalDate"} = $yearfix . '-' . $datefix;
+                #$self->{"CanonicalDate"} =
+                #strftime ("%Y-%m-%d", localtime ($time));
             }
         } else {
             if ($self->{Date} =~ m@^(\d{1,2})[-/](\d{1,2})[-/](\d{2}|\d{4})$@
