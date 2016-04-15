@@ -30,75 +30,75 @@ my $sector_align = 0;
 my $logfile;
 
 my %EXES = ("unshn" => undef,
-	    "flac" => undef,
-	    "metaflac" => undef);
+    "flac" => undef,
+    "metaflac" => undef);
 
 my %TAGFORMAT = ("ARTIST" => "ARTIST",
-		 "ALBUM" => "ALBUM",
-		 "DATE" => "DATE",
-		 "LOCATION" => "LOCATION",
-		 "SOURCEMEDIA" => "SOURCEMEDIA",
-		 "DISCNUMBER" => "DISCNUMBER",
-		 "TRACKNUMBER" => "TRACKNUMBER",
-		 "TITLE" => "TITLE",
-		 "COMMENT" => "COMMENT");
+    "ALBUM" => "ALBUM",
+    "DATE" => "DATE",
+    "LOCATION" => "LOCATION",
+    "SOURCEMEDIA" => "SOURCEMEDIA",
+    "DISCNUMBER" => "DISCNUMBER",
+    "TRACKNUMBER" => "TRACKNUMBER",
+    "TITLE" => "TITLE",
+    "COMMENT" => "COMMENT");
 
 # On Windows, add the FLAC install dir to the PATH
 if ($^O eq "MSWin32") {		# Active State
-   $ENV{"PATH"} .= ';c:\Program Files\FLAC'
-     if -d 'c:\Program Files\FLAC';
+    $ENV{"PATH"} .= ';c:\Program Files\FLAC'
+    if -d 'c:\Program Files\FLAC';
 } elsif ($^O eq "cygwin") {	# Cygwin
-   $ENV{"PATH"} .= ':/c/Program Files/FLAC'
-     if -d '/c/Program Files/FLAC';
+    $ENV{"PATH"} .= ':/c/Program Files/FLAC'
+    if -d '/c/Program Files/FLAC';
 }
 
 # Ensure all the binaries we need are in our PATH
 foreach my $exe (keys %EXES) {
-   $EXES{$exe} = findexe ($exe)
-     or die "Can't find the required program `$exe' in your PATH\n";
+    $EXES{$exe} = findexe ($exe)
+        or die "Can't find the required program `$exe' in your PATH\n";
 }
 
 GetOptions ("debug!" => \$debug,
-	    "discs!" => \$tagdiscs,
-	    "dry-run!" => \$dryrun,
-	    "help!" => sub { exit system ("perldoc", $0) },
-	    "version!" => sub { version (); exit (0) },
-	    "replay-gain!" => \$replay_gain,
-	    "sector-align!" => \$sector_align,
-	    "tag=s%" => \%TAGFORMAT,
-	    "log=s" => \$logfile);
+    "discs!" => \$tagdiscs,
+    "dry-run!" => \$dryrun,
+    "help!" => sub { exit system ("perldoc", $0) },
+    "version!" => sub { version (); exit (0) },
+    "replay-gain!" => \$replay_gain,
+    "sector-align!" => \$sector_align,
+    "tag=s%" => \%TAGFORMAT,
+    "log=s" => \$logfile);
 
 if (defined $logfile) {
-   open (STDOUT, ">> $logfile")
-     or die "$progname: can't send output to $logfile: $!\n";
-   open (STDERR, ">& STDOUT")
-     or die "$progname: can't send errors to $logfile: $!\n";
+    open (STDOUT, ">> $logfile")
+        or die "$progname: can't send output to $logfile: $!\n";
+    open (STDERR, ">& STDOUT")
+        or die "$progname: can't send errors to $logfile: $!\n";
 
-   select STDERR; $| = 1;
-   select STDOUT; $| = 1;
+    select STDERR; $| = 1;
+    select STDOUT; $| = 1;
 }
 
 sub logmsg {
-   my $prio = "INFO";
+    my $prio = "INFO";
 
-   if ($_[0] =~ m/^(warn|debug|error|info|dryrun)$/i) {
-      $prio = shift @_;
-   }
+    if ($_[0] =~ m/^(warn|debug|error|info|dryrun)$/i) {
+        $prio = shift @_;
+    }
 
-   $prio = uc $prio;
+    $prio = uc $prio;
 
-   return if $prio eq "DEBUG" and not $debug;
+    return if $prio eq "DEBUG" and not $debug;
 
-   print strftime ("%b %d %H:%M:%S: $prio: ", localtime), "@_\n";
+    print strftime ("%b %d %H:%M:%S: $prio: ", localtime), "@_\n";
 }
 
 # version - print version info
 sub version {
-   my $flacver = `$EXES{flac} --version`;
-   chomp $flacver;
+    my $flacver = `$EXES{flac} --version`;
+    chomp $flacver;
 
-   print <<EOF
-$progname version $version using $flacver
+    print <<EOF
+    $progname version $version using $flacver
 
 Copyright 2005, Caleb Epstein
 
@@ -107,540 +107,540 @@ Artistic License, the text of which is available at <URL:
 http://www.perl.com/language/misc/Artistic.html>
 
 EOF
-  ;
+    ;
 }
 
 # findexe - find a binary in the PATH
 sub findexe {
-   my $exe = shift;
-   my $fullpath;
+    my $exe = shift;
+    my $fullpath;
 
-   $fullpath = $exe if $exe =~ m@^/@ and -x $exe;
+    $fullpath = $exe if $exe =~ m@^/@ and -x $exe;
 
-   if (not defined $fullpath) {
-      my @PATH = File::Spec->path();
-      foreach my $dir (@PATH) {
-	 if (-x "$dir/$exe") {
-	    $fullpath = "$dir/$exe";
-	    last;
-	 }
-      }
-   }
+    if (not defined $fullpath) {
+        my @PATH = File::Spec->path();
+        foreach my $dir (@PATH) {
+            if (-x "$dir/$exe") {
+                $fullpath = "$dir/$exe";
+                last;
+            }
+        }
+    }
 
-   $fullpath;
+    $fullpath;
 }
 
 # Sort helpers
 sub numeric { $a <=> $b }
 
 sub setlist_order {
-   if (not defined $a) {
-      return defined $b ? 1 : 0;
-   } elsif (not defined $b) {
-      return defined $a ? -1 : 0;
-   } elsif ($a =~ /^\d+$/ and $b =~ /^\d+$/) {
-      return $a <=> $b;
-   } elsif ($a eq "E") {
-      return 1;
-   } elsif ($b eq "E") {
-      return -1;
-   }
-   return 0;
+    if (not defined $a) {
+        return defined $b ? 1 : 0;
+    } elsif (not defined $b) {
+        return defined $a ? -1 : 0;
+    } elsif ($a =~ /^\d+$/ and $b =~ /^\d+$/) {
+        return $a <=> $b;
+    } elsif ($a eq "E") {
+        return 1;
+    } elsif ($b eq "E") {
+        return -1;
+    }
+    return 0;
 }
 
 sub run_command {
-   my @COMMAND = @_;
+    my @COMMAND = @_;
 
-   $COMMAND[0] = $EXES{$COMMAND[0]};
+    $COMMAND[0] = $EXES{$COMMAND[0]};
 
-   if ($dryrun) {
-      logmsg ("DRYRUN", join (" ",
-			      map { $_ =~ m/[\s[:punct:]]/ ? "'$_'" : $_ }
-			      @COMMAND));
-      return 0;
-   }
+    if ($dryrun) {
+        logmsg ("DRYRUN", join (" ",
+                map { $_ =~ m/[\s[:punct:]]/ ? "'$_'" : $_ }
+                @COMMAND));
+        return 0;
+    }
 
-   my $retval = system (@COMMAND);
+    my $retval = system (@COMMAND);
 
-   if ($retval != 0) {
-      my $signal = $retval & 127;
-      my $core = $retval & 128;
-      my $status = $retval >> 8;
+    if ($retval != 0) {
+        my $signal = $retval & 127;
+        my $core = $retval & 128;
+        my $status = $retval >> 8;
 
-      warn "Error: $COMMAND[0] exited with status $status" .
-	($signal ? " on signal $signal" : "") .
-	  ($core ? " (dumped core)" : "") . "\n";
+        warn "Error: $COMMAND[0] exited with status $status" .
+        ($signal ? " on signal $signal" : "") .
+        ($core ? " (dumped core)" : "") . "\n";
 
-      return $status || $core || $signal;
-   }
+        return $status || $core || $signal;
+    }
 
-   0;
+    0;
 }
 
 # convert_files - do the real work
 sub convert_files {
-   my $info = shift;
-   my $songs = shift;
-   my $files = shift;
-   my $dir = $info->{Directory};
+    my $info = shift;
+    my $songs = shift;
+    my $files = shift;
+    my $dir = $info->{Directory};
 
-   chdir ($dir) or die "Couldn't change directory to $dir: $!\n";
+    chdir ($dir) or die "Couldn't change directory to $dir: $!\n";
 
-   # 1. SHN -> WAV
-   my @SHNS = grep { /\.shn$/i } @$files;
+    # 1. SHN -> WAV
+    my @SHNS = grep { /\.shn$/i } @$files;
 
-   if (scalar @SHNS) {
-      # Ensure filenames are unique because we will flatten the dirs
-      my @DUPS;
-      my %UNIQ;
+    if (scalar @SHNS) {
+        # Ensure filenames are unique because we will flatten the dirs
+        my @DUPS;
+        my %UNIQ;
 
-      foreach my $file (@SHNS) {
-	 my $base = basename $file;
-	 if (exists $UNIQ{$base}) {
-	    push (@DUPS, $file);
-	 }
-	 $UNIQ{$base}++;
-      }
+        foreach my $file (@SHNS) {
+            my $base = basename $file;
+            if (exists $UNIQ{$base}) {
+                push (@DUPS, $file);
+            }
+            $UNIQ{$base}++;
+        }
 
-      if (scalar @DUPS) {
-	 die "One or more filenames are not unique:\n" .
-	   join ("\n\t", @DUPS) . "\n";
-      }
+        if (scalar @DUPS) {
+            die "One or more filenames are not unique:\n" .
+            join ("\n\t", @DUPS) . "\n";
+        }
 
-      logmsg ("Extracting SHN to WAV");
-
-      my $status = run_command ("unshn", @SHNS);
+        logmsg ("Extracting SHN to WAV");
+
+        my $status = run_command ("unshn", @SHNS);
 
-      die "Error unpacking SHN files\n" unless $status == 0 or $status == 2;
-   }
-
-   logmsg ("DEBUG", "SHN files:\n\t" . join ("\n\t", @SHNS));
+        die "Error unpacking SHN files\n" unless $status == 0 or $status == 2;
+    }
+
+    logmsg ("DEBUG", "SHN files:\n\t" . join ("\n\t", @SHNS));
 
-   # 2. WAV -> FLAC
-   my @WAVS = map {
-      # WAV file will be created in ouur CWD
-      (my $file = basename $_) =~ s/\.shn$/.wav/i;
-      die "WAV file $file missing\n"
-	unless -f $file or $dryrun;
-      $file } @SHNS;
-
-   # Also add in any WAV files from the start
-   push (@WAVS, grep { /\.wav$/i } @$files);
+    # 2. WAV -> FLAC
+    my @WAVS = map {
+    # WAV file will be created in ouur CWD
+    (my $file = basename $_) =~ s/\.shn$/.wav/i;
+    die "WAV file $file missing\n"
+    unless -f $file or $dryrun;
+    $file } @SHNS;
+
+    # Also add in any WAV files from the start
+    push (@WAVS, grep { /\.wav$/i } @$files);
 
-   logmsg ("DEBUG", "WAV files:\n\t" . join ("\n\t", @WAVS));
-
-   if (scalar @WAVS) {
-      logmsg ("Converting WAV files to FLAC");
+    logmsg ("DEBUG", "WAV files:\n\t" . join ("\n\t", @WAVS));
+
+    if (scalar @WAVS) {
+        logmsg ("Converting WAV files to FLAC");
 
-      # In order to do proper CD sector alignment, we want to group files
-      # by set
-      my %GROUPS;
-      my $groupby = "Set";
+        # In order to do proper CD sector alignment, we want to group files
+        # by set
+        my %GROUPS;
+        my $groupby = "Set";
 
-      map {
-	 my $set = exists $_->{Set} ? $_->{Set} : 0;
-	 $GROUPS{$set}->{$_->{Index}} = $_;
-      } grep { defined and exists $_->{Index} } @$songs;
+        map {
+        my $set = exists $_->{Set} ? $_->{Set} : 0;
+        $GROUPS{$set}->{$_->{Index}} = $_;
+        } grep { defined and exists $_->{Index} } @$songs;
 
-      # If we dopn't have any set info, group files by disc instead
-      if (scalar keys %GROUPS <= 1 and exists $GROUPS{0}) {
-	 logmsg ("No set information.  Grouping by disc.");
-	 undef %GROUPS;
-	 $groupby = "Disc";
-	 foreach my $disc (1 .. $info->num_discs) {
-	    map { $GROUPS{$disc}{$_->{Index}} = $_ }
-	      grep { defined and $_->{Disc} == $disc } @$songs;
-	 }
-      }
+        # If we dopn't have any set info, group files by disc instead
+        if (scalar keys %GROUPS <= 1 and exists $GROUPS{0}) {
+            logmsg ("No set information.  Grouping by disc.");
+            undef %GROUPS;
+            $groupby = "Disc";
+            foreach my $disc (1 .. $info->num_discs) {
+                map { $GROUPS{$disc}{$_->{Index}} = $_ }
+                grep { defined and $_->{Disc} == $disc } @$songs;
+            }
+        }
 
-      if (not scalar keys %GROUPS) {
-	 $groupby = "Files";
-	 map { $GROUPS{1}{$_} = undef; } 0 .. $#$files;
-      }
+        if (not scalar keys %GROUPS) {
+            $groupby = "Files";
+            map { $GROUPS{1}{$_} = undef; } 0 .. $#$files;
+        }
 
-      logmsg ("DEBUG", "Groups (by $groupby):\n", Dumper (\%GROUPS));
+        logmsg ("DEBUG", "Groups (by $groupby):\n", Dumper (\%GROUPS));
 
-      # Reverse the mapping from group -> files to file -> group
-      my %INDEX_GROUP;
+        # Reverse the mapping from group -> files to file -> group
+        my %INDEX_GROUP;
 
-      foreach my $group (keys %GROUPS) {
-	 # Get the list of file indexes
-	 my @BATCH = keys %{$GROUPS{$group}};
-	 # Map from index -> group
-	 map { $INDEX_GROUP{$_} = $group } @BATCH;
-      }
+        foreach my $group (keys %GROUPS) {
+            # Get the list of file indexes
+            my @BATCH = keys %{$GROUPS{$group}};
+            # Map from index -> group
+            map { $INDEX_GROUP{$_} = $group } @BATCH;
+        }
 
-      logmsg ("DEBUG", "Index groups:\n", Dumper (\%INDEX_GROUP));
+        logmsg ("DEBUG", "Index groups:\n", Dumper (\%INDEX_GROUP));
 
-      foreach my $group (sort setlist_order keys (%GROUPS)) {
-	 my @BATCH = sort numeric keys %{$GROUPS{$group}};
-
-	 logmsg ("DEBUG", "Batch $group: @BATCH");
-
-	 my @FILES = map { $WAVS[$_] } grep { $_ <= $#WAVS } @BATCH;
-
-	 logmsg ("DEBUG", "Files for batch $group: @FILES");
-
-	 next unless scalar @FILES;
-
-	 logmsg ("Converting $groupby $group from WAV to FLAC, " .
-		 scalar (@FILES) . " files:\n\t" .
-		 join ("\n\t", map { basename $_ } @FILES));
+        foreach my $group (sort setlist_order keys (%GROUPS)) {
+            my @BATCH = sort numeric keys %{$GROUPS{$group}};
+
+            logmsg ("DEBUG", "Batch $group: @BATCH");
+
+            my @FILES = map { $WAVS[$_] } grep { $_ <= $#WAVS } @BATCH;
+
+            logmsg ("DEBUG", "Files for batch $group: @FILES");
+
+            next unless scalar @FILES;
+
+            logmsg ("Converting $groupby $group from WAV to FLAC, " .
+                scalar (@FILES) . " files:\n\t" .
+                join ("\n\t", map { basename $_ } @FILES));
 
-	 # Compress the WAV files to FLAC files, deleting as we go.
-	 # Ensure CD sector alignment
-	 my @CMD = ("flac", "--delete-input-file");
+            # Compress the WAV files to FLAC files, deleting as we go.
+            # Ensure CD sector alignment
+            my @CMD = ("flac", "--delete-input-file");
 
-	 if ($replay_gain) {
-	    push (@CMD, "--replay-gain");
-	 }
+            if ($replay_gain) {
+                push (@CMD, "--replay-gain");
+            }
 
-	 if ($sector_align) {
-	     push(@CMD, "--sector-align");
-     }
+            if ($sector_align) {
+                push(@CMD, "--sector-align");
+            }
 
-	 my $status = run_command (@CMD, @FILES);
+            my $status = run_command (@CMD, @FILES);
 
-	 if ($status != 0) {
-	    # Remove any FLACs we created
-	    foreach my $file (@FILES) {
-	       (my $flac = $file) =~ s/\.wav$/.flac/i;
-	       unlink $flac if -e $flac;
-	    }
-	    die "Error encoding FLAC files\n";
-	 }
-
-	 logmsg ("$groupby $group encoding complete\n");
-      }
-   }
-
-   # 3. Tag FLAC files
-   my @FLACS = grep { /\.flac$/i } @$files;
-
-   push (@FLACS, map {
-      (my $file = basename $_) =~ s/\.wav$/.flac/i;
-      die "FLAC file $file missing\n" unless -f $file or $dryrun;
-      die "FLAC file $file empty (disk full?)\n"
-	unless -s $file or $dryrun;
-      $file } @WAVS);
-
-   @FLACS = sort { basename ($a) cmp basename ($b) } @FLACS;
-
-   die "Number of FLAC files (" . scalar (@FLACS) . ") does not match " .
-     "number of songs (" . scalar (@$songs) . ")\n"
-       unless scalar @FLACS == scalar @$songs;
-
-   logmsg ("DEBUG", "FLAC files:\n\t", join ("\n\t", @FLACS));
-
-   logmsg ("Tagging files\n");
-
-   tag_files ($info, $songs, \@FLACS) or die "Error tagging files\n";
-
-   # If we have pre-existing FLAC files, make sure they have Replay
-   # Gain tags
-   if ($replay_gain and not scalar @SHNS) {
-      replay_gain (@FLACS) or die "Error calculating ReplayGain\n";
-   }
-
-   logmsg ("Removing original SHN files") if scalar @SHNS;
-
-   my $howmany = ($dryrun ? scalar (@SHNS) : unlink (@SHNS));
-
-   if ($howmany != scalar @SHNS) {
-      die "Removed only $howmany SHN files, expected " .
-	scalar (@SHNS) . "\n";
-   }
-
-   # Determine if FFP file is needed
-   if (not $dryrun) {
-      my @TXT;
-
-      # Find all TXT or FFP files
-      find (sub {
-	       push (@TXT, $File::Find::name) if /\.(txt|ffp)/
-	    }, $dir);
-
-      # Determine if any of these contains FLAC fingerprints already.
-      # If so we will do nothing.
-      my $have_ffp = 0;
-
-      FFPS: foreach my $ffp (@TXT) {
-	 open (FILE, $ffp) or next;
-	 while (<FILE>) {
-	    if (/^\s*(.+):([\da-f]{32})\s*$/ and $1 =~ /\.flac$/) {
-	       logmsg ("Found existing FLAC fingerprints in $ffp");
-	       $have_ffp = 1;
-	       last FFPS;
-	    }
-	 }
-	 close FILE;
-      }
-
-      if (not $have_ffp) {
-	 logmsg ("Creating FLAC fingerprint file ffp.txt");
-
-	 open (METAFLAC, "$EXES{metaflac} --show-md5sum --with-filename " .
-	       join (" ", map { quotemeta $_ } @FLACS) . "|")
-	   or die "Unable to open pipe from metaflac: $!\n";
-
-	 open (FFP, "> ffp.txt") or die "Unable to write ffp.txt: $!\n";
-
-	 print FFP "FLAC fingerprints generated by $progname $version at " .
-	   scalar (localtime) . "\n\n";
-
-	 while (<METAFLAC>) {
-	    print FFP $_;
-	 }
-
-	 close METAFLAC;
-	 close FFP;
-      }
-   }
-
-   # Rename original MD5 files
-   my @MD5S = $info->files ("md5");
-
-   if (scalar @MD5S) {
-      logmsg ("Renaming MD5 files:");
-
-      foreach my $file (@MD5S) {
-	 (my $newname = $dir . "/" . basename ($file)) =~ s/$/.orig/;
-	 logmsg ("\t$file -> $newname");
-	 if (not $dryrun) {
-	    rename ($file, $newname)
-	      or die "Rename failed: $!\n";
-	 }
-      }
-   }
-
-   # Remove old .skt files
-   my @SKTS = $info->files ("skt");
-
-   if (scalar @SKTS) {
-      logmsg ("Removing Shorten v3 seek-table files:");
-
-      foreach my $file (@SKTS) {
-	 logmsg ("\t$file");
-	 if (not $dryrun) {
-	    unlink ($file) or die "Unable to remove $file: $!\n";
-	 }
-      }
-   }
-
-   # Remove empty subdirs
-   if (not $dryrun) {
-      logmsg ("Removing empty subdirectories\n");
-      local $File::Find::dont_use_nlink = 1;
-      finddepth (sub { rmdir if -d }, $dir);
-   }
-
-   # Rename the directory to have a .flac16 extension
-   (my $newdir = $dir) =~ s/\.(wav|shn|flac\d*)f?$//ig;
-   $newdir .= ".flac16";
-
-   if (not $dryrun and $newdir ne $dir) {
-      logmsg ("Renaming $dir -> $newdir");
-      chdir ("..") or die "Unable to chdir: $!\n";
-      rename ($dir, $newdir) or die "Rename failed: $!\n";
-   }
-
-   logmsg ("Done processing $dir");
-
-   1;
+            if ($status != 0) {
+                # Remove any FLACs we created
+                foreach my $file (@FILES) {
+                    (my $flac = $file) =~ s/\.wav$/.flac/i;
+                    unlink $flac if -e $flac;
+                }
+                die "Error encoding FLAC files\n";
+            }
+
+            logmsg ("$groupby $group encoding complete\n");
+        }
+    }
+
+    # 3. Tag FLAC files
+    my @FLACS = grep { /\.flac$/i } @$files;
+
+    push (@FLACS, map {
+        (my $file = basename $_) =~ s/\.wav$/.flac/i;
+        die "FLAC file $file missing\n" unless -f $file or $dryrun;
+        die "FLAC file $file empty (disk full?)\n"
+        unless -s $file or $dryrun;
+        $file } @WAVS);
+
+    @FLACS = sort { basename ($a) cmp basename ($b) } @FLACS;
+
+    die "Number of FLAC files (" . scalar (@FLACS) . ") does not match " .
+    "number of songs (" . scalar (@$songs) . ")\n"
+    unless scalar @FLACS == scalar @$songs;
+
+    logmsg ("DEBUG", "FLAC files:\n\t", join ("\n\t", @FLACS));
+
+    logmsg ("Tagging files\n");
+
+    tag_files ($info, $songs, \@FLACS) or die "Error tagging files\n";
+
+    # If we have pre-existing FLAC files, make sure they have Replay
+    # Gain tags
+    if ($replay_gain and not scalar @SHNS) {
+        replay_gain (@FLACS) or die "Error calculating ReplayGain\n";
+    }
+
+    logmsg ("Removing original SHN files") if scalar @SHNS;
+
+    my $howmany = ($dryrun ? scalar (@SHNS) : unlink (@SHNS));
+
+    if ($howmany != scalar @SHNS) {
+        die "Removed only $howmany SHN files, expected " .
+        scalar (@SHNS) . "\n";
+    }
+
+    # Determine if FFP file is needed
+    if (not $dryrun) {
+        my @TXT;
+
+        # Find all TXT or FFP files
+        find (sub {
+                push (@TXT, $File::Find::name) if /\.(txt|ffp)/
+            }, $dir);
+
+        # Determine if any of these contains FLAC fingerprints already.
+        # If so we will do nothing.
+        my $have_ffp = 0;
+
+        FFPS: foreach my $ffp (@TXT) {
+            open (FILE, $ffp) or next;
+            while (<FILE>) {
+                if (/^\s*(.+):([\da-f]{32})\s*$/ and $1 =~ /\.flac$/) {
+                    logmsg ("Found existing FLAC fingerprints in $ffp");
+                    $have_ffp = 1;
+                    last FFPS;
+                }
+            }
+            close FILE;
+        }
+
+        if (not $have_ffp) {
+            logmsg ("Creating FLAC fingerprint file ffp.txt");
+
+            open (METAFLAC, "$EXES{metaflac} --show-md5sum --with-filename " .
+                join (" ", map { quotemeta $_ } @FLACS) . "|")
+                or die "Unable to open pipe from metaflac: $!\n";
+
+            open (FFP, "> ffp.txt") or die "Unable to write ffp.txt: $!\n";
+
+            print FFP "FLAC fingerprints generated by $progname $version at " .
+            scalar (localtime) . "\n\n";
+
+            while (<METAFLAC>) {
+                print FFP $_;
+            }
+
+            close METAFLAC;
+            close FFP;
+        }
+    }
+
+    # Rename original MD5 files
+    my @MD5S = $info->files ("md5");
+
+    if (scalar @MD5S) {
+        logmsg ("Renaming MD5 files:");
+
+        foreach my $file (@MD5S) {
+            (my $newname = $dir . "/" . basename ($file)) =~ s/$/.orig/;
+            logmsg ("\t$file -> $newname");
+            if (not $dryrun) {
+                rename ($file, $newname)
+                    or die "Rename failed: $!\n";
+            }
+        }
+    }
+
+    # Remove old .skt files
+    my @SKTS = $info->files ("skt");
+
+    if (scalar @SKTS) {
+        logmsg ("Removing Shorten v3 seek-table files:");
+
+        foreach my $file (@SKTS) {
+            logmsg ("\t$file");
+            if (not $dryrun) {
+                unlink ($file) or die "Unable to remove $file: $!\n";
+            }
+        }
+    }
+
+    # Remove empty subdirs
+    if (not $dryrun) {
+        logmsg ("Removing empty subdirectories\n");
+        local $File::Find::dont_use_nlink = 1;
+        finddepth (sub { rmdir if -d }, $dir);
+    }
+
+    # Rename the directory to have a .flac16 extension
+    (my $newdir = $dir) =~ s/\.(wav|shn|flac\d*)f?$//ig;
+    $newdir .= ".flac16";
+
+    if (not $dryrun and $newdir ne $dir) {
+        logmsg ("Renaming $dir -> $newdir");
+        chdir ("..") or die "Unable to chdir: $!\n";
+        rename ($dir, $newdir) or die "Rename failed: $!\n";
+    }
+
+    logmsg ("Done processing $dir");
+
+    1;
 }
 
 sub tag_files {
-   my $info = shift;
-   my $songs = shift;
-   my $files = shift;
+    my $info = shift;
+    my $songs = shift;
+    my $files = shift;
 
-   # FLAC tags taken from
-   # http://reactor-core.org/ogg-tag-recommendations.html
-   my %VALUES;
+    # FLAC tags taken from
+    # http://reactor-core.org/ogg-tag-recommendations.html
+    my %VALUES;
 
-   $VALUES{"ARTIST"} = $info->artist if $info->artist;
-   $VALUES{"ALBUM"} = $info->album if $info->album;
-   $VALUES{"DATE"} = $info->year if $info->year;
-   $VALUES{"LOCATION"} = $info->venue if $info->venue;
-   $VALUES{"SOURCEMEDIA"} = $info->source if $info->source;
+    $VALUES{"ARTIST"} = $info->artist if $info->artist;
+    $VALUES{"ALBUM"} = $info->album if $info->album;
+    $VALUES{"DATE"} = $info->year if $info->year;
+    $VALUES{"LOCATION"} = $info->venue if $info->venue;
+    $VALUES{"SOURCEMEDIA"} = $info->source if $info->source;
 
-   foreach my $index (0 .. $#$files) {
-      my $song = ref ($songs) ? $songs->[$index] : undef;
+    foreach my $index (0 .. $#$files) {
+        my $song = ref ($songs) ? $songs->[$index] : undef;
 
-      delete $VALUES{"DISCNUMBER"};
-      delete $VALUES{"TRACKNUMBER"};
-      delete $VALUES{"TITLE"};
-      delete $VALUES{"COMMENT"};
+        delete $VALUES{"DISCNUMBER"};
+        delete $VALUES{"TRACKNUMBER"};
+        delete $VALUES{"TITLE"};
+        delete $VALUES{"COMMENT"};
 
-      # If running in --discs mode, tag files with DISCNUMBER and
-      # TRACKNUMBER.  Not all applications/devices honor the
-      # DISCNUMBER tag though, so this may leave you with all of your
-      # Track 1's sorting before all of your Track 2's.
-      if (defined $song and $tagdiscs) {
-	 $VALUES{"DISCNUMBER"} = $song->{Disc} if $song->{Disc};
-	 $VALUES{"TRACKNUMBER"} = $song->{Track} || ($index + 1);
-      } else {
-	 $VALUES{"DISCNUMBER"} = undef;
-	 $VALUES{"TRACKNUMBER"} = $index + 1;
-      }
+        # If running in --discs mode, tag files with DISCNUMBER and
+        # TRACKNUMBER.  Not all applications/devices honor the
+        # DISCNUMBER tag though, so this may leave you with all of your
+        # Track 1's sorting before all of your Track 2's.
+        if (defined $song and $tagdiscs) {
+            $VALUES{"DISCNUMBER"} = $song->{Disc} if $song->{Disc};
+            $VALUES{"TRACKNUMBER"} = $song->{Track} || ($index + 1);
+        } else {
+            $VALUES{"DISCNUMBER"} = undef;
+            $VALUES{"TRACKNUMBER"} = $index + 1;
+        }
 
-      $VALUES{"TITLE"} = $song->{Title} if defined $song and $song->{Title};
+        $VALUES{"TITLE"} = $song->{Title} if defined $song and $song->{Title};
 
-      # Mark song as having a segue
-      if (exists $song->{Segue}) {
-	 $VALUES{"TITLE"} .= " ->";
-      }
+        # Mark song as having a segue
+        if (exists $song->{Segue}) {
+            $VALUES{"TITLE"} .= " ->";
+        }
 
-      my $note;
-      $note = $song->{Notes} if defined $song and exists $song->{Notes};
+        my $note;
+        $note = $song->{Notes} if defined $song and exists $song->{Notes};
 
-      if (defined $note and exists $info->{Notes}{$note}) {
-	 $VALUES{"COMMENT"} = $info->{Notes}{$note};
-      } else {
-	 $VALUES{"COMMENT"} = undef;
-      }
+        if (defined $note and exists $info->{Notes}{$note}) {
+            $VALUES{"COMMENT"} = $info->{Notes}{$note};
+        } else {
+            $VALUES{"COMMENT"} = undef;
+        }
 
-      my %TAGS = %TAGFORMAT;
+        my %TAGS = %TAGFORMAT;
 
-      foreach my $tag (keys %TAGS) {
-	 my $format = $TAGS{$tag};
-	 foreach my $key (keys %VALUES) {
-	    my $value = $VALUES{$key} || "";
-	    $format =~ s/\b$key\b/$value/g;
-	 }
-	 if (length $format and $format ne $TAGS{$tag}) {
-	    $TAGS{$tag} = $format;
-	 } else {
-	    delete $TAGS{$tag};
-	 }
-      }
+        foreach my $tag (keys %TAGS) {
+            my $format = $TAGS{$tag};
+            foreach my $key (keys %VALUES) {
+                my $value = $VALUES{$key} || "";
+                $format =~ s/\b$key\b/$value/g;
+            }
+            if (length $format and $format ne $TAGS{$tag}) {
+                $TAGS{$tag} = $format;
+            } else {
+                delete $TAGS{$tag};
+            }
+        }
 
-      print "" . sprintf ("%2d/%2d", $index + 1, $#$files + 1) . ": " .
-	($TAGS{TITLE} || "") .
-	  (exists $TAGS{COMMENT} ? " ($TAGS{COMMENT})" : "") . "\n";
+        print "" . sprintf ("%2d/%2d", $index + 1, $#$files + 1) . ": " .
+        ($TAGS{TITLE} || "") .
+        (exists $TAGS{COMMENT} ? " ($TAGS{COMMENT})" : "") . "\n";
 
-      my @TAGS;
-      foreach my $tag (keys %TAGS) {
-	 my $value = $TAGS{$tag};
-	 push (@TAGS, "--remove-tag=$tag");
-	 if (defined $value) {
-	    $value =~ s@\r?\n@ // @g;
-	    push (@TAGS, "--set-tag=$tag=$value");
-	 }
-      }
-      my @CMD = ("metaflac", @TAGS, $files->[$index]);
+        my @TAGS;
+        foreach my $tag (keys %TAGS) {
+            my $value = $TAGS{$tag};
+            push (@TAGS, "--remove-tag=$tag");
+            if (defined $value) {
+                $value =~ s@\r?\n@ // @g;
+                push (@TAGS, "--set-tag=$tag=$value");
+            }
+        }
+        my @CMD = ("metaflac", @TAGS, $files->[$index]);
 
-      my $status = run_command (@CMD);
+        my $status = run_command (@CMD);
 
-      if ($status != 0) {
-	 warn "Error setting tags on $files->[$index]\n";
-	 return 0;
-      }
-   }
+        if ($status != 0) {
+            warn "Error setting tags on $files->[$index]\n";
+            return 0;
+        }
+    }
 
-   print "\n";
+    print "\n";
 
-   1;
+    1;
 }
 
 sub replay_gain {
-   my @FILES = @_;
+    my @FILES = @_;
 
-   return 1 unless $replay_gain;
+    return 1 unless $replay_gain;
 
-   if (not open (METAFLAC, "$EXES{metaflac} --list " .
-		 "--block-type=VORBIS_COMMENT \Q$FILES[0]\E|")) {
-      warn "Unable to read VORBIS_COMMENT block from $FILES[0] " .
-	"to check for ReplayGain tags\n";
-      return 0;
-   }
+    if (not open (METAFLAC, "$EXES{metaflac} --list " .
+            "--block-type=VORBIS_COMMENT \Q$FILES[0]\E|")) {
+        warn "Unable to read VORBIS_COMMENT block from $FILES[0] " .
+        "to check for ReplayGain tags\n";
+        return 0;
+    }
 
-   my $need = 1;
+    my $need = 1;
 
-   while (<METAFLAC>) {
-      $need = 0 if /REPLAYGAIN/;
-   }
+    while (<METAFLAC>) {
+        $need = 0 if /REPLAYGAIN/;
+    }
 
-   close METAFLAC;
+    close METAFLAC;
 
-   return 1 unless $need;
+    return 1 unless $need;
 
-   logmsg ("Adding ReplayGain information to FLACs (this may take a while)");
+    logmsg ("Adding ReplayGain information to FLACs (this may take a while)");
 
-   my @CMD = ("metaflac", "--add-replay-gain", @FILES);
+    my @CMD = ("metaflac", "--add-replay-gain", @FILES);
 
-   my $status = run_command (@CMD);
+    my $status = run_command (@CMD);
 
-   if ($status != 0) {
-      warn "Error adding ReplayGain tags to FLAC files\n";
-      return 0;
-   }
+    if ($status != 0) {
+        warn "Error adding ReplayGain tags to FLAC files\n";
+        return 0;
+    }
 
-   logmsg ("Done with ReplayGain\n");
+    logmsg ("Done with ReplayGain\n");
 
-   return 1;
+    return 1;
 }
 
 # Operate on CWD if nothing is specified
 if (not scalar @ARGV) { push (@ARGV, "."); }
 
 foreach my $dir (map { File::Spec->rel2abs ($_) } @ARGV) {
-   if (not -d $dir) {
-      warn "$dir: not a directory\n";
-      next;
-   }
+    if (not -d $dir) {
+        warn "$dir: not a directory\n";
+        next;
+    }
 
-   my $info = new Etree::InfoFile (Directory => $dir,
-				   Debug => $debug) or die;
+    my $info = new Etree::InfoFile (Directory => $dir,
+        Debug => $debug) or die;
 
-   $info->parse;
+    $info->parse;
 
-   print "=" x 79 . "\n";
+    print "=" x 79 . "\n";
 
-   logmsg ("Processing directory $dir\n");
+    logmsg ("Processing directory $dir\n");
 
-   logmsg ("DEBUG", "Etree::InfoFile dump:\n" . Dumper ($info));
+    logmsg ("DEBUG", "Etree::InfoFile dump:\n" . Dumper ($info));
 
-   # Wrap long lines nicely
-   sub linewrap {
-      local ($Text::Wrap::columns) = 65;
-      Text::Wrap::wrap ('', '        ', shift);
-   }
+    # Wrap long lines nicely
+    sub linewrap {
+        local ($Text::Wrap::columns) = 65;
+        Text::Wrap::wrap ('', '        ', shift);
+    }
 
-   print
-     "   Dir: ", linewrap ($dir), "\n",
-     "Artist: ", linewrap ($info->artist || "Unknown"), "\n",
-     "  Date: ", linewrap ($info->date || "Unknown"), "\n",
-     " Venue: ", linewrap ($info->venue || "Unknown"), "\n",
-     "Source: ", linewrap ($info->source || "Unknown"), "\n",
-     "\n";
+    print
+    "   Dir: ", linewrap ($dir), "\n",
+    "Artist: ", linewrap ($info->artist || "Unknown"), "\n",
+    "  Date: ", linewrap ($info->date || "Unknown"), "\n",
+    " Venue: ", linewrap ($info->venue || "Unknown"), "\n",
+    "Source: ", linewrap ($info->source || "Unknown"), "\n",
+    "\n";
 
-   # Get the list of all possible audio files we will convert
-   my @FILES = sort { $a cmp $b } $info->files ("flac"),
-     $info->files ("wav"), $info->files ("shn");
+    # Get the list of all possible audio files we will convert
+    my @FILES = sort { $a cmp $b } $info->files ("flac"),
+    $info->files ("wav"), $info->files ("shn");
 
-   if (not scalar @FILES) {
-      logmsg ("WARN", "No appropriate audio files found.  Skipping $dir");
-      next;
-   }
+    if (not scalar @FILES) {
+        logmsg ("WARN", "No appropriate audio files found.  Skipping $dir");
+        next;
+    }
 
-   my @SONGS = $info->songs;
+    my @SONGS = $info->songs;
 
-   if (scalar @SONGS and scalar @SONGS < scalar @FILES) {
-      logmsg ("WARN", "Number of songs from info file (" . scalar (@SONGS) .
-	      ") doesn't match number of audio files (" . scalar (@FILES) 
-	      . "):\n");
-      logmsg ("WARN", "Songs:\n\t", join ("\n\t", map { $_->{Title} } @SONGS),
-	      "\nFiles:\n\t", join ("\n\t", map { basename $_ } @FILES), "\n");
-      next;
-   }
+    if (scalar @SONGS and scalar @SONGS < scalar @FILES) {
+        logmsg ("WARN", "Number of songs from info file (" . scalar (@SONGS) .
+            ") doesn't match number of audio files (" . scalar (@FILES) 
+            . "):\n");
+        logmsg ("WARN", "Songs:\n\t", join ("\n\t", map { $_->{Title} } @SONGS),
+            "\nFiles:\n\t", join ("\n\t", map { basename $_ } @FILES), "\n");
+        next;
+    }
 
-   # Truncate the song list to match the file list
-   $#SONGS = $#FILES;
+    # Truncate the song list to match the file list
+    $#SONGS = $#FILES;
 
-   convert_files ($info, \@SONGS, \@FILES) or die "Error converting files\n";
+    convert_files ($info, \@SONGS, \@FILES) or die "Error converting files\n";
 
-   print "=" x 79 . "\n";
+    print "=" x 79 . "\n";
 }
 
 __END__
